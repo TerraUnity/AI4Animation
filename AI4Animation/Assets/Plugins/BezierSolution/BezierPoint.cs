@@ -5,6 +5,7 @@ namespace BezierSolution
 	public class BezierPoint : MonoBehaviour
 	{
 		public enum HandleMode { Free, Aligned, Mirrored };
+    public enum StatusMode { Walk, Run };
 
 		public Vector3 localPosition
 		{
@@ -187,6 +188,19 @@ namespace BezierSolution
 
 		[SerializeField]
 		[HideInInspector]
+    private StatusMode m_statusMode = StatusMode.Walk;
+    public StatusMode statusMode
+    {
+      get
+      {
+        return m_statusMode;
+      }
+      set
+      {
+        m_statusMode = value;
+
+      }
+    }
 		private HandleMode m_handleMode = HandleMode.Mirrored;
 		public HandleMode handleMode
 		{

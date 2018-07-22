@@ -165,6 +165,22 @@ namespace BezierSolution
 			drawGizmos = false;
 		}
 
+    public BezierPoint GetBezierPoint(ref float normalizedT)
+    {
+      float t = normalizedT * (loop ? endPoints.Count : (endPoints.Count - 1));
+      BezierPoint startPoint, endPoint;
+
+      int startIndex = (int)t;
+      int endIndex = startIndex + 1;
+
+      if (endIndex == endPoints.Count)
+          endIndex = 0;
+
+      startPoint = endPoints[startIndex];
+      endPoint = endPoints[endIndex];
+      return endPoint;
+    }
+
 		public Vector3 GetPoint( float normalizedT )
 		{
 			if( normalizedT <= 0f )
