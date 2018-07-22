@@ -28,6 +28,7 @@ ExportedObj/
 # Unity3D generated meta files
 *.pidb.meta
 
+
 # Unity3D Generated File On Crash Reports
 sysinfo.txt
 
@@ -37,5 +38,7 @@ sysinfo.txt
 
 # Custom
 AI4Animation/Assets/Project*
+AI4Animation/Assets/Demo/SIGGRAPH_2017/Original/NN*
+AI4Animation/Assets/Demo/SIGGRAPH_2017/Original/Parameters*
 TensorFlow/Project*
 Export*
