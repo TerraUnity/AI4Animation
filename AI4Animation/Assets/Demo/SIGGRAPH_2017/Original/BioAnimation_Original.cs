@@ -14,7 +14,8 @@ namespace SIGGRAPH_2017 {
 		public float TrajectoryCorrection = 1f;
 
 		public Controller Controller;
-
+		public SplineController splineController;
+		public bool activeSpline = true; 
 		private Actor Actor;
 		private PFNN NN;
 		private Trajectory Trajectory;
@@ -81,11 +82,17 @@ namespace SIGGRAPH_2017 {
 			if(NN.Parameters == null) {
 				return;
 			}
-			
+			if (activeSpline)
+      {
+        Vector3 targetDir = splineController.getTransition(transform) - transform.position;
+        TargetDirection = Vector3.Lerp(TargetDirection, targetDir, TargetBlending);
+        TargetVelocity = Vector3.Lerp(TargetVelocity, (Quaternion.LookRotation(TargetDirection, Vector3.up) * Controller.QueryMove()).normalized, TargetBlending);
+      }
+			else {
 			//Update Target Direction / Velocity
 			TargetDirection = Vector3.Lerp(TargetDirection, Quaternion.AngleAxis(Controller.QueryTurn()*60f, Vector3.up) * Trajectory.Points[RootPointIndex].GetDirection(), TargetBlending);
 			TargetVelocity = Vector3.Lerp(TargetVelocity, (Quaternion.LookRotation(TargetDirection, Vector3.up) * Controller.QueryMove()).normalized, TargetBlending);
-			
+			}
 			//Update Gait
 			for(int i=0; i<Controller.Styles.Length; i++) {
 				Trajectory.Points[RootPointIndex].Styles[i] = Utility.Interpolate(Trajectory.Points[RootPointIndex].Styles[i], Controller.Styles[i].Query() ? 1f : 0f, GaitTransition);
