@@ -13,8 +13,9 @@ namespace SIGGRAPH_2017 {
 		public float GaitTransition = 0.25f;
 		public float TrajectoryCorrection = 1f;
 
-		public Controller Controller;
-		public SplineController splineController;
+
+    // Instead of Controller we're using our own SplineController
+		public SplineController Controller;
 		public bool activeSpline = true; 
 		private Actor Actor;
 		private PFNN NN;
@@ -41,11 +42,11 @@ namespace SIGGRAPH_2017 {
 		private const int PointDensity = 10;
 
 		void Reset() {
-			Controller = new Controller();
+			Controller = new SplineController();
 		}
 
 		void Awake() {
-			Actor = GetComponent<Actor>();
+      Actor = GetComponent<Actor>();
 			NN = GetComponent<PFNN>();
 			TargetDirection = new Vector3(transform.forward.x, 0f, transform.forward.z);
 			TargetVelocity = Vector3.zero;
@@ -84,14 +85,14 @@ namespace SIGGRAPH_2017 {
 			}
 			if (activeSpline)
       {
-        Vector3 targetDir = splineController.getTransition(transform) - transform.position;
+        Vector3 targetDir = Controller.getTransition(transform) - transform.position;
         TargetDirection = Vector3.Lerp(TargetDirection, targetDir, TargetBlending);
         TargetVelocity = Vector3.Lerp(TargetVelocity, (Quaternion.LookRotation(TargetDirection, Vector3.up) * Controller.QueryMove()).normalized, TargetBlending);
       }
 			else {
 			//Update Target Direction / Velocity
-			TargetDirection = Vector3.Lerp(TargetDirection, Quaternion.AngleAxis(Controller.QueryTurn()*60f, Vector3.up) * Trajectory.Points[RootPointIndex].GetDirection(), TargetBlending);
-			TargetVelocity = Vector3.Lerp(TargetVelocity, (Quaternion.LookRotation(TargetDirection, Vector3.up) * Controller.QueryMove()).normalized, TargetBlending);
+			  TargetDirection = Vector3.Lerp(TargetDirection, Quaternion.AngleAxis(Controller.QueryTurn()*60f, Vector3.up) * Trajectory.Points[RootPointIndex].GetDirection(), TargetBlending);
+			  TargetVelocity = Vector3.Lerp(TargetVelocity, (Quaternion.LookRotation(TargetDirection, Vector3.up) * Controller.QueryMove()).normalized, TargetBlending);
 			}
 			//Update Gait
 			for(int i=0; i<Controller.Styles.Length; i++) {

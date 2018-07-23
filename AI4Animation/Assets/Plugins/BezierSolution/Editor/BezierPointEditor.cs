@@ -197,8 +197,20 @@ namespace BezierSolution
 
 				EditorGUILayout.Space();
 			}
-			
-			EditorGUI.BeginChangeCheck();
+
+      EditorGUI.BeginChangeCheck();
+      BezierPoint.StatusMode statusMode = (BezierPoint.StatusMode)EditorGUILayout.EnumPopup("Status Mode", point.statusMode);
+      if (EditorGUI.EndChangeCheck())
+      {
+        Undo.RecordObject(point, "Change Point Status Mode");
+        point.statusMode = statusMode;
+
+        SceneView.RepaintAll();
+      }
+
+      EditorGUILayout.Space();
+
+      EditorGUI.BeginChangeCheck();
 			BezierPoint.HandleMode handleMode = (BezierPoint.HandleMode) EditorGUILayout.EnumPopup( "Handle Mode", point.handleMode );
 			if( EditorGUI.EndChangeCheck() )
 			{

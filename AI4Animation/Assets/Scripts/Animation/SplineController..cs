@@ -45,24 +45,18 @@ public class SplineController
 
   public Vector3 getTransition(Transform t)
   {
-    Vector3 targetPos = spline.MoveAlongSpline(ref progress, targetSpeed * Time.deltaTime);
+    Vector3 targetPos = spline.MoveAlongSpline(ref progress, targetSpeed * Time.deltaTime );
+    targetPos = new Vector3(targetPos.x, t.position.y, targetPos.z);
     BezierPoint gp = spline.GetBezierPoint(ref progress);
-    UnityEngine.Debug.Log(gp.statusMode);
+    Style.type = gp.statusMode;
     if (gp.statusMode == BezierPoint.StatusMode.Run)
     {
-      for (int i = 0; i < Styles.Length; i++)
-      {
-        targetSpeed *= 2;
-        Styles[i].run = true;
-      }
+      targetSpeed = 2.3f;
     }
     else
     {
-      for (int i = 0; i < Styles.Length; i++)
-      {
-        targetSpeed = 2;
-        Styles[i].run = false;
-      }
+      targetSpeed = 2;
+ 
     }
     //targetPos = new Vector3(targetPos.x,t.position.y + 0.5f,targetPos.z);
     return targetPos;
@@ -77,19 +71,7 @@ public class SplineController
 
   public float QueryTurn()
   {
-    float turn = 0f;
-
-    //if(Input.GetKey(TurnLeft))
-    //      {
-    //	turn -= 1f;
-    //}
-
-    //if(Input.GetKey(TurnRight))
-    //      {
-    //	turn += 1f;
-    //}
-
-    return turn;
+    return 0f;
   }
 
   public void SetStyleCount(int count)
@@ -127,55 +109,22 @@ public class SplineController
     public KeyCode[] Keys = new KeyCode[0];
     public bool[] Negations = new bool[0];
     public Multiplier[] Multipliers = new Multiplier[0];
-
-    public bool run = false;
+    public static BezierPoint.StatusMode type = BezierPoint.StatusMode.Walk;
 
 
 
     public bool Query()
     {
-      if (Keys.Length == 0)
-      {
-        return true;
-      }
-
-      // UnityEngine.Debug.Log(this.Name);
       bool active = false;
 
-
-
-
-      if (Name == "Jog" && run)
+      if(Name == "Walk" && type == BezierPoint.StatusMode.Walk)
       {
         active = true;
       }
-
-      //for(int i=0; i<Keys.Length; i++) {
-      //	if(!Negations[i]) {
-      //		if(Keys[i] == KeyCode.None) {
-      //			if(!Input.anyKey) {
-      //				active = true;
-      //			}
-      //		} else {
-      //			if(Input.GetKey(Keys[i])) {
-      //				active = true;
-      //			}
-      //		}
-      //	}
-      //}
-      //for(int i=0; i<Keys.Length; i++) {
-      //	if(Negations[i]) {
-      //		if(Keys[i] == KeyCode.None) {
-      //			if(!Input.anyKey) {
-      //				active = false;
-      //			}
-      //		} else {
-      //			if(Input.GetKey(Keys[i])) {
-      //				active = false;
-      //			}
-      //		}
-      //	}
-      //}
+      else if (Name == "Jog" && type == BezierPoint.StatusMode.Run)
+      {
+        active = true;
+      }
 
       return active;
     }
@@ -225,54 +174,6 @@ public class SplineController
         using (new EditorGUILayout.VerticalScope("Box"))
         {
           spline = EditorGUILayout.ObjectField(spline, typeof(BezierSpline), true) as BezierSpline;
-
-          //Forward = (KeyCode)EditorGUILayout.EnumPopup("Forward", Forward);
-          //Back = (KeyCode)EditorGUILayout.EnumPopup("Backward", Back);
-          //Left = (KeyCode)EditorGUILayout.EnumPopup("Left", Left);
-          //Right = (KeyCode)EditorGUILayout.EnumPopup("Right", Right);
-          //TurnLeft = (KeyCode)EditorGUILayout.EnumPopup("Turn Left", TurnLeft);
-          //TurnRight = (KeyCode)EditorGUILayout.EnumPopup("Turn Right", TurnRight);
-          //SetStyleCount(EditorGUILayout.IntField("Styles", Styles.Length));
-
-
-
-
-          /*
-for(int i=0; i<Styles.Length; i++) {
-  Utility.SetGUIColor(UltiDraw.Grey);
-  using(new EditorGUILayout.VerticalScope ("Box")) {
-
-    Utility.ResetGUIColor();
-    Styles[i].Name = EditorGUILayout.TextField("Name", Styles[i].Name);
-    Styles[i].Bias = EditorGUILayout.FloatField("Bias", Styles[i].Bias);
-    Styles[i].Transition = EditorGUILayout.Slider("Transition", Styles[i].Transition, 0f, 1f);
-    Styles[i].SetKeyCount(EditorGUILayout.IntField("Keys", Styles[i].Keys.Length));
-
-    for(int j=0; j<Styles[i].Keys.Length; j++) {
-      EditorGUILayout.BeginHorizontal();
-      Styles[i].Keys[j] = (KeyCode)EditorGUILayout.EnumPopup("Key", Styles[i].Keys[j]);
-      Styles[i].Negations[j] = EditorGUILayout.Toggle("Negate", Styles[i].Negations[j]);
-      EditorGUILayout.EndHorizontal();
-    }
-
-    for(int j=0; j<Styles[i].Multipliers.Length; j++) {
-      Utility.SetGUIColor(Color.grey);
-      using(new GUILayout.VerticalScope ("Box")) {
-        Utility.ResetGUIColor();
-        Styles[i].Multipliers[j].Key = (KeyCode)EditorGUILayout.EnumPopup("Key", Styles[i].Multipliers[j].Key);
-        Styles[i].Multipliers[j].Value = EditorGUILayout.FloatField("Value", Styles[i].Multipliers[j].Value);
-      }
-    }
-
-    if(Utility.GUIButton("Add Multiplier", UltiDraw.DarkGrey, UltiDraw.White)) {
-      Styles[i].AddMultiplier();
-    }
-    if(Utility.GUIButton("Remove Multiplier", UltiDraw.DarkGrey, UltiDraw.White)) {
-      Styles[i].RemoveMultiplier();
-    }
-  }
-}
-          */
         }
       }
     }
