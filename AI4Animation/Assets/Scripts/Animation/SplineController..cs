@@ -1,6 +1,5 @@
 ﻿using UnityEngine;
 using BezierSolution;
-using System.Collections.Generic;
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
@@ -21,6 +20,8 @@ public class SplineController
     get { return progress; }
     set { progress = value; }
   }
+  public float relaxationAtEndPoints = 0.01f;
+
 
   public Style[] Styles = new Style[0];
 
@@ -45,27 +46,27 @@ public class SplineController
   }
 
 
-  public BezierPoint getStarttPosition()
-  {
-    return spline.GetBezierPoint(ref progress);
+  public BezierPoint[] getCurrentPoints() {
+    return spline.GetBezierPoints(ref progress);
   }
-
-
-  public BezierPoint getEndPoint()
-  {
-    return spline.GetBezierEndPoint(ref progress);
-  }
-
 
 
 
   public Vector3 getTransition(Transform t)
   {
-    BezierPoint gp = spline.GetBezierPoint(ref progress);
+    BezierPoint gp = spline.GetBezierPoints(ref progress)[0];
     Style.type = gp.statusMode;
 
     if (waiting)
-      return t.position;
+      return Vector3.zero;
+
+    if( progress >= 1f - relaxationAtEndPoints ){
+      progress -= 1f;
+    }
+    // else if( progress <= relaxationAtEndPoints ) {
+    //   progress += 1f;
+    // }
+
 
     Vector3 targetPos = spline.MoveAlongSpline(ref progress, targetSpeed * Time.deltaTime);
     targetPos = new Vector3(targetPos.x, t.position.y, targetPos.z);

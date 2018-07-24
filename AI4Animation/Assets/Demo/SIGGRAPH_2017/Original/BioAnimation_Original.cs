@@ -82,9 +82,9 @@ namespace SIGGRAPH_2017 {
     void StopWaiting()
     {
       Controller.waiting = false;
-      Controller.getStarttPosition().statusMode = Controller.getEndPoint().statusMode;
-      SplineController.Style.type = Controller.getStarttPosition().statusMode;
-      UnityEngine.Debug.Log("Stop waiting " + SplineController.Style.type);
+			var points = Controller.getCurrentPoints();
+      points[0].statusMode = points[1].statusMode;
+      SplineController.Style.type = points[0].statusMode;
     }
 
 		void Update() {
@@ -95,9 +95,8 @@ namespace SIGGRAPH_2017 {
       {
         if (SplineController.Style.type == BezierSolution.BezierPoint.StatusMode.Wait && !Controller.waiting)
         {
-          UnityEngine.Debug.Log("Start waiting");
           Controller.waiting = true;
-          Invoke("StopWaiting", Controller.getStarttPosition().timeout);
+          Invoke("StopWaiting", Controller.getCurrentPoints()[0].timeout);
         }
         else
         {
