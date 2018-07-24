@@ -42,6 +42,7 @@ SIGGRAPH 2017
 ------------
 <img src ="https://github.com/sebastianstarke/AI4Animation/blob/master/Media/SIGGRAPH_2017/Adam.png" width="100%">
 <img align="left" src ="https://github.com/sebastianstarke/AI4Animation/blob/master/Media/SIGGRAPH_2017/Original.png" width="45%">
+<img align="left" src="https://raw.githubusercontent.com/TerraUnity/AI4Animation/master/Media/SIGGRAPH_2017/Original_Splineway.png" width="45%">
 This work continues the recent work on PFNN (Phase-Functioned Neural Networks) for character control.
 A demo in Unity3D using the original weights for terrain-adaptive locomotion is contained in the Assets/Demo/SIGGRAPH_2017/Original folder.
 Another demo on flat ground using the Adam character is contained in the Assets/Demo/SIGGRAPH_2017/Adam folder.
