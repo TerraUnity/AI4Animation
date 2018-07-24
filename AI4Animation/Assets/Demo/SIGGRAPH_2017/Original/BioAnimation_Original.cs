@@ -79,15 +79,32 @@ namespace SIGGRAPH_2017 {
 			Utility.SetFPS(60);
 		}
 
+    void StopWaiting()
+    {
+      Controller.waiting = false;
+      Controller.getStarttPosition().statusMode = Controller.getEndPoint().statusMode;
+      SplineController.Style.type = Controller.getStarttPosition().statusMode;
+      UnityEngine.Debug.Log("Stop waiting " + SplineController.Style.type);
+    }
+
 		void Update() {
 			if(NN.Parameters == null) {
 				return;
 			}
 			if (activeSpline)
       {
-        Vector3 targetDir = Controller.getTransition(transform) - transform.position;
-        TargetDirection = Vector3.Lerp(TargetDirection, targetDir, TargetBlending);
-        TargetVelocity = Vector3.Lerp(TargetVelocity, (Quaternion.LookRotation(TargetDirection, Vector3.up) * Controller.QueryMove()).normalized, TargetBlending);
+        if (SplineController.Style.type == BezierSolution.BezierPoint.StatusMode.Wait && !Controller.waiting)
+        {
+          UnityEngine.Debug.Log("Start waiting");
+          Controller.waiting = true;
+          Invoke("StopWaiting", Controller.getStarttPosition().timeout);
+        }
+        else
+        {
+          Vector3 targetDir = Controller.getTransition(transform);
+          TargetDirection = Vector3.Lerp(TargetDirection, targetDir, TargetBlending);
+          TargetVelocity = Vector3.Lerp(TargetVelocity, (Quaternion.LookRotation(TargetDirection, Vector3.up) * Controller.QueryMove()).normalized, TargetBlending);
+        }
       }
 			else {
 			//Update Target Direction / Velocity

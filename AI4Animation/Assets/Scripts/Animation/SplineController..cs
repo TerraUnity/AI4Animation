@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using BezierSolution;
+using System.Collections.Generic;
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
@@ -14,6 +15,7 @@ public class SplineController
   public TravelMode travelMode;
   private float progress = 0f;
   float targetSpeed = 2f;
+  public bool waiting = false;
   public float NormalizedT
   {
     get { return progress; }
@@ -43,29 +45,47 @@ public class SplineController
   }
 
 
+  public BezierPoint getStarttPosition()
+  {
+    return spline.GetBezierPoint(ref progress);
+  }
+
+
+  public BezierPoint getEndPoint()
+  {
+    return spline.GetBezierEndPoint(ref progress);
+  }
+
+
+
+
   public Vector3 getTransition(Transform t)
   {
-    Vector3 targetPos = spline.MoveAlongSpline(ref progress, targetSpeed * Time.deltaTime );
-    targetPos = new Vector3(targetPos.x, t.position.y, targetPos.z);
     BezierPoint gp = spline.GetBezierPoint(ref progress);
     Style.type = gp.statusMode;
+
+    if (waiting)
+      return t.position;
+
+    Vector3 targetPos = spline.MoveAlongSpline(ref progress, targetSpeed * Time.deltaTime);
+    targetPos = new Vector3(targetPos.x, t.position.y, targetPos.z);
+
     if (gp.statusMode == BezierPoint.StatusMode.Run)
-    {
       targetSpeed = 2.3f;
-    }
     else
-    {
       targetSpeed = 2;
- 
-    }
+
     //targetPos = new Vector3(targetPos.x,t.position.y + 0.5f,targetPos.z);
-    return targetPos;
+    return targetPos - t.position;
   }
 
   public Vector3 QueryMove()
   {
     Vector3 move = Vector3.zero;
-    move.z += 1f;
+    if(Style.type != BezierPoint.StatusMode.Wait)
+    {
+      move.z += 1f;
+    }
     return move;
   }
 
@@ -125,7 +145,10 @@ public class SplineController
       {
         active = true;
       }
-
+      else if (Name == "Stand" && type == BezierPoint.StatusMode.Wait)
+      {
+        active = true;
+      }
       return active;
     }
 

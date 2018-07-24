@@ -5,9 +5,10 @@ namespace BezierSolution
 	public class BezierPoint : MonoBehaviour
 	{
 		public enum HandleMode { Free, Aligned, Mirrored };
-    public enum StatusMode { Walk, Run };
+    public enum StatusMode { Walk, Run, Wait };
+    public float timeout = 10; // secconds
 
-		public Vector3 localPosition
+    public Vector3 localPosition
 		{
 			get { return transform.localPosition; }
 			set { transform.localPosition = value; }
@@ -201,7 +202,7 @@ namespace BezierSolution
 
       }
     }
-		private HandleMode m_handleMode = HandleMode.Mirrored;
+    private HandleMode m_handleMode = HandleMode.Mirrored;
 		public HandleMode handleMode
 		{
 			get

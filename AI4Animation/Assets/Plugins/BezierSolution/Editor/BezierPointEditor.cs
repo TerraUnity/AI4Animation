@@ -208,6 +208,8 @@ namespace BezierSolution
         SceneView.RepaintAll();
       }
 
+      point.timeout = (int)EditorGUILayout.FloatField("Timeout", point.timeout);
+
       EditorGUILayout.Space();
 
       EditorGUI.BeginChangeCheck();
