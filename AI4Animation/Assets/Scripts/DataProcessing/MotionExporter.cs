@@ -78,6 +78,10 @@ public class MotionExporter : EditorWindow {
 						EditorGUILayout.LabelField("Exporter");
 					}
 
+					WriteData = EditorGUILayout.Toggle("Write Data", WriteData);
+					WriteLabels = EditorGUILayout.Toggle("Write Labels", WriteLabels);
+					WriteNorm = EditorGUILayout.Toggle("Write Norm", WriteNorm);
+
 					if(!Exporting) {
 						if(Utility.GUIButton("Export Data", UltiDraw.DarkGrey, UltiDraw.White)) {
 							this.StartCoroutine(ExportData());
@@ -212,6 +216,7 @@ public class MotionExporter : EditorWindow {
 						Vector3 velocity = current.Trajectory.Points[k].GetVelocity().GetRelativeDirectionTo(current.Root);
 						float[] state = Filter(ref current.Trajectory.Points[k].Styles, ref current.Trajectory.Styles, ref Styles);
 						float[] signal = Filter(ref current.Trajectory.Points[k].Signals, ref current.Trajectory.Styles, ref Styles);
+						float phaseUpdate = current.Trajectory.Points[k].PhaseUpdate;
 						X.Feed(position.x, Data.ID.Standard, "Trajectory"+(k+1)+"PositionX");
 						X.Feed(position.z, Data.ID.Standard, "Trajectory"+(k+1)+"PositionZ");
 						X.Feed(direction.x, Data.ID.Standard, "Trajectory"+(k+1)+"DirectionX");
@@ -220,6 +225,7 @@ public class MotionExporter : EditorWindow {
 						X.Feed(velocity.z, Data.ID.Standard, "Trajectory"+(k+1)+"VelocityZ");
 						X.Feed(state, Data.ID.Standard, "Trajectory"+(k+1)+"State");
 						X.Feed(signal, Data.ID.Standard, "Trajectory"+(k+1)+"Signal");
+						X.Feed(phaseUpdate, Data.ID.Standard, "Trajectory"+(k+1)+"PhaseUpdate");
 					}
 					for(int k=0; k<current.Posture.Length; k++) {
 						Vector3 position = current.Posture[k].GetPosition().GetRelativePositionTo(current.Root);
@@ -239,13 +245,13 @@ public class MotionExporter : EditorWindow {
 						X.Feed(velocity.y, Data.ID.Standard, "Bone"+(k+1)+"VelocityY");
 						X.Feed(velocity.z, Data.ID.Standard, "Bone"+(k+1)+"VelocityZ");
 					}
-					//for(int k=0; k<7; k++) {
-					//	X.Feed(Filter(ref current.Trajectory.Points[k].Styles, ref current.Trajectory.Styles, ref Styles), Data.ID.OnOff);
-					//}
-					for(int k=0; k<7; k++) {
-						X.Feed(Utility.StylePhase(Filter(ref current.Trajectory.Points[k].Styles, ref current.Trajectory.Styles, ref Styles), current.Trajectory.Points[k].Phase), Data.ID.Ignore, "StylePhase"+(k+1)+"-");
+					for(int k=0; k<6; k++) {
+						X.Feed(Utility.StylePhase(Filter(ref current.Trajectory.Points[k].Styles, ref current.Trajectory.Styles, ref Styles), current.Trajectory.Points[k].Phase), Data.ID.Ignore, "StylePhase"+(k+1)+"-", (float)(k+1) / 7f);
 					}
-					//X.Feed(Utility.StylePhase(Filter(ref current.Trajectory.Points[6].Styles, ref current.Trajectory.Styles, ref Styles), current.Trajectory.Points[6].Phase), Data.ID.Ignore);
+					X.Feed(Utility.StylePhase(Filter(ref current.Trajectory.Points[6].Styles, ref current.Trajectory.Styles, ref Styles), current.Trajectory.Points[6].Phase), Data.ID.Ignore, "StylePhase"+6+"-", 1f);
+					for(int k=7; k<12; k++) {
+						X.Feed(Utility.StylePhase(Filter(ref current.Trajectory.Points[k].Styles, ref current.Trajectory.Styles, ref Styles), current.Trajectory.Points[k].Phase), Data.ID.Ignore, "StylePhase"+(k+1)+"-", 1f - (float)(k-6) / 6f);
+					}
 					X.Store();
 					//
 
@@ -281,8 +287,10 @@ public class MotionExporter : EditorWindow {
 						Y.Feed(velocity.y, Data.ID.Standard, "Bone"+(k+1)+"VelocityY");
 						Y.Feed(velocity.z, Data.ID.Standard, "Bone"+(k+1)+"VelocityZ");
 					}
-					//Y.Feed(Filter(ref next.Trajectory.Points[6].Styles, ref next.Trajectory.Styles, ref Styles), Data.ID.OnOff);
-					Y.Feed(Utility.GetLinearPhaseUpdate(current.Trajectory.Points[6].Phase, next.Trajectory.Points[6].Phase), Data.ID.Standard, "PhaseUpdate");
+					for(int k=6; k<12; k++) {
+						Y.Feed(next.Trajectory.Points[k].PhaseUpdate, Data.ID.Standard, "PhaseUpdate");
+					}
+					//Y.Feed(Utility.GetLinearPhaseUpdate(current.Trajectory.Points[6].Phase, next.Trajectory.Points[6].Phase), Data.ID.Standard, "PhaseUpdate");
 					Y.Store();
 					//
 
@@ -317,13 +325,15 @@ public class MotionExporter : EditorWindow {
 
 	public class Data {
 		public StreamWriter File, Norm, Labels;
-		public enum ID {Standard, OnOff, Ignore}
+		public enum ID {Standard, Ignore, IgnoreMean, IgnoreStd}
 
-		public RunningStatistics[] Statistics = null;
+		public RunningStatistics[] Mean = null;
+		public RunningStatistics[] Std = null;
 
 		private float[] Values = new float[0];
 		private ID[] Types = new ID[0];
 		private string[] Names = new string[0];
+		private float[] Weights = new float[0];
 		private int Dim = 0;
 
 		public Data(StreamWriter file, StreamWriter norm, StreamWriter labels) {
@@ -332,7 +342,7 @@ public class MotionExporter : EditorWindow {
 			Labels = labels;
 		}
 
-		public void Feed(float value, ID type, string name) {
+		public void Feed(float value, ID type, string name, float weight=1f) {
 			Dim += 1;
 			if(Values.Length < Dim) {
 				ArrayExtensions.Add(ref Values, value);
@@ -345,34 +355,48 @@ public class MotionExporter : EditorWindow {
 			if(Names.Length < Dim) {
 				ArrayExtensions.Add(ref Names, name);
 			}
+			if(Weights.Length < Dim) {
+				ArrayExtensions.Add(ref Weights, weight);
+			}
 		}
 
-		public void Feed(float[] values, ID type, string name) {
+		public void Feed(float[] values, ID type, string name, float weight = 1f) {
 			for(int i=0; i<values.Length; i++) {
-				Feed(values[i], type, name + (i+1));
+				Feed(values[i], type, name + (i+1), weight);
 			}
 		}
 
 		public void Store() {
 			if(Norm != null) {
-				if(Statistics == null) {
-					Statistics = new RunningStatistics[Values.Length];
-					for(int i=0; i<Statistics.Length; i++) {
-						Statistics[i] = new RunningStatistics();
+				if(Mean == null && Std == null) {
+					Mean = new RunningStatistics[Values.Length];
+					for(int i=0; i<Mean.Length; i++) {
+						Mean[i] = new RunningStatistics();
+					}
+					Std = new RunningStatistics[Values.Length];
+					for(int i=0; i<Std.Length; i++) {
+						Std[i] = new RunningStatistics();
 					}
 				}
 				for(int i=0; i<Values.Length; i++) {
 					switch(Types[i]) {
 						case ID.Standard:		//Ground Truth
-						Statistics[i].Add(Values[i]);
-						break;
-						case ID.OnOff:			//Mean 0.5 Std 0.5
-						Statistics[i].Add(1f);
-						Statistics[i].Add(0f);
+						Mean[i].Add(Values[i]);
+						Std[i].Add(Values[i]);
 						break;
 						case ID.Ignore:			//Mean 0.0 Std 1.0
-						Statistics[i].Add(-1f);
-						Statistics[i].Add(1f);
+						Mean[i].Add(0f);
+						Std[i].Add(-1f);
+						Std[i].Add(1f);
+						break;
+						case ID.IgnoreMean:		//Mean 0.0 Std GT
+						Mean[i].Add(0f);
+						Std[i].Add(Values[i]);
+						break;
+						case ID.IgnoreStd:		//Mean GT Std 1.0
+						Mean[i].Add(Values[i]);
+						Std[i].Add(-1f);
+						Std[i].Add(1f);
 						break;
 					}
 				}
@@ -405,16 +429,16 @@ public class MotionExporter : EditorWindow {
 
 			if(Norm != null) {
 				string mean = string.Empty;
-				for(int i=0; i<Statistics.Length; i++) {
-					mean += Statistics[i].Mean().ToString(Accuracy) + Separator;
+				for(int i=0; i<Mean.Length; i++) {
+					mean += Mean[i].Mean().ToString(Accuracy) + Separator;
 				}
 				mean = mean.Remove(mean.Length-1);
 				mean = mean.Replace(",",".");
 				Norm.WriteLine(mean);
 
 				string std = string.Empty;
-				for(int i=0; i<Statistics.Length; i++) {
-					std += Statistics[i].Std().ToString(Accuracy) + Separator;
+				for(int i=0; i<Std.Length; i++) {
+					std += (Std[i].Std() / Weights[i]).ToString(Accuracy) + Separator;
 				}
 				std = std.Remove(std.Length-1);
 				std = std.Replace(",",".");
