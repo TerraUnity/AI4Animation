@@ -59,10 +59,6 @@ public class PhaseModule : Module {
 		return mirrored ? InversePhaseFunction.GetPhase(frame) : RegularPhaseFunction.GetPhase(frame);
 	}
 
-	public float GetPhaseUpdate(Frame frame, bool mirrored) {
-		return mirrored ? InversePhaseFunction.GetPhaseUpdate(frame) : RegularPhaseFunction.GetPhaseUpdate(frame);
-	}
-
 	public override void Draw(MotionEditor editor) {
 
 	}
@@ -72,12 +68,7 @@ public class PhaseModule : Module {
 		ShowCycle = EditorGUILayout.Toggle("Show Cycle", ShowCycle);
 		SetMaximumVelocity(EditorGUILayout.FloatField("Maximum Velocity", MaximumVelocity));
 		SetVelocityThreshold(EditorGUILayout.FloatField("Velocity Threshold", VelocityThreshold));
-		string[] names = new string[1 + Data.Source.Bones.Length];
-		names[0] = "Select...";
-		for(int i=0; i<names.Length-1; i++) {
-			names[i+1] = Data.Source.Bones[i].Name;
-		}
-		int index = EditorGUILayout.Popup("Phase Detector", 0, names);
+		int index = EditorGUILayout.Popup("Phase Detector", 0, ArrayExtensions.Concat("Select...", Data.Source.GetNames()));
 		if(index > 0) {
 			ToggleVariable(index-1);
 		}
@@ -211,14 +202,6 @@ public class PhaseModule : Module {
 
 		public float GetPhase(Frame frame) {
 			return Phase[frame.Index-1];
-		}
-
-		public float GetPhaseUpdate(Frame frame) {
-			if(frame.Index == 1) {
-				return GetPhaseUpdate(frame.GetNextFrame());
-			} else {
-				return Utility.GetLinearPhaseUpdate(GetPhase(frame.GetPreviousFrame()), GetPhase(frame)) * Module.Data.Framerate;
-			}
 		}
 
 		public Frame GetPreviousKey(Frame frame) {
@@ -474,11 +457,19 @@ public class PhaseModule : Module {
 				//
 
 				//Current Pivot
+				float pStart = (float)(Module.Data.GetFrame(Mathf.Clamp(frame.Timestamp-1f, 0f, Module.Data.GetTotalTime())).Index-start) / (float)elements;
+				float pEnd = (float)(Module.Data.GetFrame(Mathf.Clamp(frame.Timestamp+1f, 0f, Module.Data.GetTotalTime())).Index-start) / (float)elements;
+				float pLeft = rect.x + pStart * rect.width;
+				float pRight = rect.x + pEnd * rect.width;
+				Vector3 pA = new Vector3(pLeft, rect.y, 0f);
+				Vector3 pB = new Vector3(pRight, rect.y, 0f);
+				Vector3 pC = new Vector3(pLeft, rect.y+rect.height, 0f);
+				Vector3 pD = new Vector3(pRight, rect.y+rect.height, 0f);
+				UltiDraw.DrawTriangle(pA, pC, pB, UltiDraw.White.Transparent(0.1f));
+				UltiDraw.DrawTriangle(pB, pC, pD, UltiDraw.White.Transparent(0.1f));
 				top.x = rect.xMin + (float)(frame.Index-start)/elements * rect.width;
 				bottom.x = rect.xMin + (float)(frame.Index-start)/elements * rect.width;
 				UltiDraw.DrawLine(top, bottom, UltiDraw.Yellow);
-				UltiDraw.DrawCircle(top, 3f, UltiDraw.Green);
-				UltiDraw.DrawCircle(bottom, 3f, UltiDraw.Green);
 
 				Handles.DrawLine(Vector3.zero, Vector3.zero); //Somehow needed to get it working...
 				EditorGUILayout.EndVertical();

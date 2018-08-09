@@ -9,30 +9,6 @@ public class StyleModule : Module {
 	public bool[] Keys = new bool[0];
 	public StyleFunction[] Functions = new StyleFunction[0];
 
-	public void Repair() {
-		if(Keys.Length != Data.GetTotalFrames()) {
-			Keys = new bool[Data.GetTotalFrames()];
-			Keys[0] = true;
-			Keys[Keys.Length-1] = true;
-			for(int i=1; i<Keys.Length-1; i++) {
-				for(int j=0; j<Functions.Length; j++) {
-					if(Functions[j].Values[i] == 0f && Functions[j].Values[i+1] != 0f) {
-						Keys[i] = true;
-					}
-					if(Functions[j].Values[i] == 1f && Functions[j].Values[i+1] != 1f) {
-						Keys[i] = true;
-					}
-					if(Functions[j].Values[i] != 0f && Functions[j].Values[i+1] == 0f) {
-						Keys[i+1] = true;
-					}
-					if(Functions[j].Values[i] != 1f && Functions[j].Values[i+1] == 1f) {
-						Keys[i+1] = true;
-					}
-				}
-			}
-		}
-	}
-
 	public override TYPE Type() {
 		return TYPE.Style;
 	}
@@ -64,20 +40,42 @@ public class StyleModule : Module {
 		}
 	}
 
-	public float[] GetSignal(Frame frame) {
+	public float[] GetSignal(Frame frame, int window=0) {
 		float[] signal = new float[Functions.Length];
-		for(int i=0; i<signal.Length; i++) {
-			signal[i] = Functions[i].GetFlag(frame);
+		if(window == 0) {
+			for(int i=0; i<signal.Length; i++) {
+				signal[i] = Functions[i].GetFlag(frame) - Functions[i].GetValue(frame);
+			} 
+		} else {
+			Frame[] frames = Data.GetFrames(Mathf.Clamp(frame.Index - window, 1, Data.GetTotalFrames()), Mathf.Clamp(frame.Index + window, 1, Data.GetTotalFrames()));
+			for(int i=0; i<signal.Length; i++) {
+				float[] values = new float[frames.Length];
+				for(int j=0; j<values.Length; j++) {
+					values[j] = Functions[i].GetFlag(frames[j]) - Functions[i].GetValue(frames[j]);
+				}
+				signal[i] = Utility.FilterGaussian(values);
+			}
 		}
 		return signal;
 	}
 
-	public float[] GetMirrorSignal(Frame frame) {
-		float[] mirror = new float[Functions.Length];
-		for(int i=0; i<mirror.Length; i++) {
-			mirror[i] = Functions[i].GetMirrorFlag(frame);
+	public float[] GetInverseSignal(Frame frame, int window=0) {
+		float[] signal = new float[Functions.Length];
+		if(window == 0) {
+			for(int i=0; i<signal.Length; i++) {
+				signal[i] = Functions[i].GetInverseFlag(frame) - Functions[i].GetValue(frame);
+			} 
+		} else {
+			Frame[] frames = Data.GetFrames(Mathf.Clamp(frame.Index - window, 1, Data.GetTotalFrames()), Mathf.Clamp(frame.Index + window, 1, Data.GetTotalFrames()));
+			for(int i=0; i<signal.Length; i++) {
+				float[] values = new float[frames.Length];
+				for(int j=0; j<values.Length; j++) {
+					values[j] = Functions[i].GetInverseFlag(frames[j]) - Functions[i].GetValue(frames[j]);
+				}
+				signal[i] = Utility.FilterGaussian(values);
+			}
 		}
-		return mirror;
+		return signal;
 	}
 
 	public float[] GetStyle(Frame frame) {
@@ -132,8 +130,6 @@ public class StyleModule : Module {
 	}
 
 	protected override void DerivedInspector(MotionEditor editor) {
-		Repair();
-
 		Frame frame = editor.GetCurrentFrame();
 
 		if(Utility.GUIButton("Key", IsKey(frame) ? UltiDraw.Cyan : UltiDraw.DarkGrey, IsKey(frame) ? UltiDraw.Black : UltiDraw.White)) {
@@ -146,8 +142,8 @@ public class StyleModule : Module {
 			if(Utility.GUIButton(Functions[i].Name, colors[i].Transparent(Utility.Normalise(Functions[i].GetValue(frame), 0f, 1f, 0.25f, 1f)), UltiDraw.White, 200f, height)) {
 				Functions[i].Toggle(frame);
 			}
-			EditorGUILayout.Toggle(Functions[i].GetFlag(frame) == 1f ? true : false);
-			EditorGUILayout.Toggle(Functions[i].GetMirrorFlag(frame) == 1f ? true : false);
+			//EditorGUILayout.Toggle(Functions[i].GetFlag(frame) == 1f ? true : false);
+			//EditorGUILayout.Toggle(Functions[i].GetInverseFlag(frame) == 1f ? true : false);
 			Rect c = EditorGUILayout.GetControlRect();
 			Rect r = new Rect(c.x, c.y, Functions[i].GetValue(frame) * c.width, height);
 			EditorGUI.DrawRect(r, colors[i].Transparent(0.75f));
@@ -235,11 +231,19 @@ public class StyleModule : Module {
 		}
 
 		//Current Pivot
+		float pStart = (float)(Data.GetFrame(Mathf.Clamp(frame.Timestamp-1f, 0f, Data.GetTotalTime())).Index-start) / (float)elements;
+		float pEnd = (float)(Data.GetFrame(Mathf.Clamp(frame.Timestamp+1f, 0f, Data.GetTotalTime())).Index-start) / (float)elements;
+		float pLeft = rect.x + pStart * rect.width;
+		float pRight = rect.x + pEnd * rect.width;
+		Vector3 pA = new Vector3(pLeft, rect.y, 0f);
+		Vector3 pB = new Vector3(pRight, rect.y, 0f);
+		Vector3 pC = new Vector3(pLeft, rect.y+rect.height, 0f);
+		Vector3 pD = new Vector3(pRight, rect.y+rect.height, 0f);
+		UltiDraw.DrawTriangle(pA, pC, pB, UltiDraw.White.Transparent(0.1f));
+		UltiDraw.DrawTriangle(pB, pC, pD, UltiDraw.White.Transparent(0.1f));
 		top.x = rect.xMin + (float)(frame.Index-start)/elements * rect.width;
 		bottom.x = rect.xMin + (float)(frame.Index-start)/elements * rect.width;
 		UltiDraw.DrawLine(top, bottom, UltiDraw.Yellow);
-		UltiDraw.DrawCircle(top, 3f, UltiDraw.Green);
-		UltiDraw.DrawCircle(bottom, 3f, UltiDraw.Green);
 
 		UltiDraw.End();
 		EditorGUILayout.EndVertical();
@@ -270,7 +274,7 @@ public class StyleModule : Module {
 				? 1f : 0f;
 		}
 
-		public float GetMirrorFlag(Frame frame) {
+		public float GetInverseFlag(Frame frame) {
 			return 
 				((GetValue(frame) == 1f) && GetValue(frame.GetPreviousFrame()) == 1f)
 				||

@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 
@@ -280,6 +281,64 @@ public static class Utility {
 		return Vector3.Angle(normal, Vector3.up) / 90f;
 	}
 
+	public static Vector3 GetNormal(Vector3 position, Vector3 point, Collider collider, float radius, LayerMask mask) {
+		if(position == point) {
+			List<RaycastHit> hits = new List<RaycastHit>();
+			Quaternion rotation = collider.transform.rotation;
+
+			Vector3 x = rotation * Vector3.right;
+			Vector3 y = rotation * Vector3.up;
+			Vector3 z = rotation * Vector3.forward;
+
+			RaycastHit XP;
+			if(Physics.Raycast(point + radius * x, -x, out XP, 2f*radius, mask)) {
+				hits.Add(XP);
+			}
+			RaycastHit XN;
+			if(Physics.Raycast(point + radius * -x, x, out XN, 2f*radius, mask)) {
+				hits.Add(XN);
+			}
+			RaycastHit YP;
+			if(Physics.Raycast(point + radius * y, -y, out YP, 2f*radius, mask)) {
+				hits.Add(YP);
+			}
+			RaycastHit YN;
+			if(Physics.Raycast(point + radius * -y, y, out YN, 2f*radius, mask)) {
+				hits.Add(YN);
+			}
+			RaycastHit ZP;
+			if(Physics.Raycast(point + radius * z, -z, out ZP, 2f*radius, mask)) {
+				hits.Add(ZP);
+			}
+			RaycastHit ZN;
+			if(Physics.Raycast(point + radius * -z, z, out ZN, 2f*radius, mask)) {
+				hits.Add(ZN);
+			}
+			
+			if(hits.Count > 0) {
+				RaycastHit closest = hits[0];
+				for(int k=1; k<hits.Count; k++) {
+					if(Vector3.Distance(hits[k].point, point) < Vector3.Distance(closest.point, point)) {
+						closest = hits[k];
+					}
+				}
+				return closest.normal;
+			} else {
+				Debug.Log("Could not compute normal for collider " + collider.name + ".");
+				return Vector3.zero;
+			}
+		} else {
+			RaycastHit hit;
+			if(Physics.Raycast(position, (point - position).normalized, out hit, 2f*radius, mask)) {
+				return hit.normal;
+			} else {
+				Debug.Log("Could not compute normal for collider " + collider.name + ".");
+				return Vector3.zero;
+			}
+			
+		}
+	}
+
 	public static Vector3 GetNormal(Vector3 origin, LayerMask mask) {
 		RaycastHit[] upHits = Physics.RaycastAll(origin+Vector3.down, Vector3.up, float.PositiveInfinity, mask);
 		RaycastHit[] downHits = Physics.RaycastAll(origin+Vector3.up, Vector3.down, float.PositiveInfinity, mask);
@@ -485,6 +544,7 @@ public static class Utility {
 		return new Vector3(GaussianValue(mean, sigma), GaussianValue(mean, sigma), GaussianValue(mean, sigma));
 	}
 	
+	/*
 	public static float GetLinearPhase(float value) {
 		return value;
 	}
@@ -510,23 +570,47 @@ public static class Utility {
 	}
 
 	public static Vector2 GetCirclePhase(float value) {
-		return Quaternion.AngleAxis(-value*360f, Vector3.forward) * Vector2.up;
+		value *= 2f*Mathf.PI;
+		return new Vector2(Mathf.Sin(value), Mathf.Cos(value));
+		//return Quaternion.AngleAxis(-value*360f, Vector3.forward) * Vector2.up;
 	}
 
 	public static Vector2 GetCirclePhaseUpdate(float from, float to) {
 		return GetCirclePhase(to) - GetCirclePhase(from);
 	}
+	*/
 
-	public static float[] StylePhase(float[] style, float phase) {
+	public static float PhaseUpdate(float from, float to) {
+		return Mathf.Repeat((to - from + 1f), 1f);
+	}
+
+	public static Vector2 PhaseVector(float phase) {
+		phase *= 2f*Mathf.PI;
+		return new Vector2(Mathf.Sin(phase), Mathf.Cos(phase));
+	}
+
+	public static float PhaseAverage(float[] values) {
+		float[] x = new float[values.Length];
+		float[] y = new float[values.Length];
+		for(int i=0; i<values.Length; i++) {
+			Vector2 v = PhaseVector(values[i]);
+			x[i] = v.x;
+			y[i] = v.y;
+		}
+		return Mathf.Repeat(-Vector2.SignedAngle(Vector2.up, new Vector2(FilterGaussian(x), FilterGaussian(y)).normalized) / 360f, 1f);
+	}
+
+	public static float[] PhaseStyle(float[] style, float phase) {
 		float[] result = new float[2*style.Length];
 		for(int i=0; i<style.Length; i++) {
-			Vector2 direction = style[i] * GetCirclePhase(phase);
+			Vector2 direction = style[i] * PhaseVector(phase);
 			result[2*i+0] = direction.x;
 			result[2*i+1] = direction.y;
 		}
 		return result;
 	}
 
+	/*
 	public static float[] StyleUpdatePhase(float[] previousStyle, float[] currentStyle, float previousPhase, float currentPhase) {
 		float[] previousStylePhase = StylePhase(previousStyle, previousPhase);
 		float[] currentStylePhase = StylePhase(currentStyle, currentPhase);
@@ -535,6 +619,22 @@ public static class Utility {
 			result[i] = currentStylePhase[i] - previousStylePhase[i];
 		}
 		return result;
+	}
+	*/
+
+	public static float FilterGaussian(float[] values) {
+		if(values.Length == 0) {
+			return 0f;
+		}
+		float window = ((float)values.Length - 1f) / 2f;
+		float sum = 0f;
+		float value = 0f;
+		for(int i=0; i<values.Length; i++) {
+			float weight = Mathf.Exp(-Mathf.Pow((float)i - window, 2f) / Mathf.Pow(0.5f * window, 2f));
+			value += weight * values[i];
+			sum += weight;
+		}
+		return value / sum;
 	}
 
 }

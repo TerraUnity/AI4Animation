@@ -61,6 +61,25 @@ public static class ArrayExtensions {
 		return FindIndex(ref array, element) >= 0;
 	}
 
+	public static T[] Concat<T>(T[] lhs, T[] rhs) {
+		T[] result = new T[lhs.Length + rhs.Length];
+		lhs.CopyTo(result, 0);
+		rhs.CopyTo(result, lhs.Length);
+		return result;
+	}
+
+	public static T[] Concat<T>(T lhs, T[] rhs) {
+		T[] clone = (T[])rhs.Clone();
+		Insert(ref clone, lhs, 0);
+		return clone;
+	}
+
+	public static T[] Concat<T>(T[] lhs, T rhs) {
+		T[] clone = (T[])lhs.Clone();
+		ArrayExtensions.Add(ref clone, rhs);
+		return clone;
+	}
+
 	public static float[] Add(float[] lhs, float[] rhs) {
 		if(lhs.Length != rhs.Length) {
 			Debug.Log("Incompatible array dimensions.");
@@ -73,6 +92,14 @@ public static class ArrayExtensions {
 		return result;
 	}
 
+	public static float[] Add(float[] lhs, float value) {
+		float[] result = new float[lhs.Length];
+		for(int i=0; i<result.Length; i++) {
+			result[i] = lhs[i] + value;
+		}
+		return result;
+	}
+
 	public static float[] Sub(float[] lhs, float[] rhs) {
 		if(lhs.Length != rhs.Length) {
 			Debug.Log("Incompatible array dimensions.");
@@ -81,6 +108,14 @@ public static class ArrayExtensions {
 		float[] result = new float[lhs.Length];
 		for(int i=0; i<result.Length; i++) {
 			result[i] = lhs[i] - rhs[i];
+		}
+		return result;
+	}
+
+	public static float[] Sub(float[] lhs, float value) {
+		float[] result = new float[lhs.Length];
+		for(int i=0; i<result.Length; i++) {
+			result[i] = lhs[i] - value;
 		}
 		return result;
 	}
@@ -284,6 +319,36 @@ public static class ArrayExtensions {
 		}
 		variance /= args;
 		return System.Math.Sqrt(variance);
+	}
+
+	public static void Zero(this float[] values) {
+		for(int i=0; i<values.Length; i++) {
+			values[i] = 0f;
+		}
+	}
+
+	public static void Print(this double[] values) {
+		string output = "[";
+		for(int i=0; i<values.Length; i++) {
+			output += values[i].ToString() + (i==values.Length-1 ? "]" : ", ");
+		}
+		Debug.Log(output);
+	}
+
+	public static void Print(this float[] values) {
+		string output = "[";
+		for(int i=0; i<values.Length; i++) {
+			output += values[i].ToString() + (i==values.Length-1 ? "]" : ", ");
+		}
+		Debug.Log(output);
+	}
+
+	public static void Print(this int[] values) {
+		string output = "[";
+		for(int i=0; i<values.Length; i++) {
+			output += values[i].ToString() + (i==values.Length-1 ? "]" : ", ");
+		}
+		Debug.Log(output);
 	}
 
 }

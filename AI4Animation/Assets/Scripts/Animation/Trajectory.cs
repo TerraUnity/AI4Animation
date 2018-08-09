@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using System.Collections.Generic;
 
 public class Trajectory {
 
@@ -87,9 +88,9 @@ public class Trajectory {
 		private Vector3 RightSample;
 		private float Slope;
 		public float Phase;
-		public float PhaseUpdate;
 		public float[] Signals = new float[0];
 		public float[] Styles = new float[0];
+		public float[] StyleUpdate = new float[0];
 
 		public Point(int index, int styles) {
 			Index = index;
@@ -100,6 +101,7 @@ public class Trajectory {
 			Slope = 0f;
 			Signals = new float[styles];
 			Styles = new float[styles];
+			StyleUpdate = new float[styles];
 		}
 
 		public void SetIndex(int index) {
@@ -318,8 +320,38 @@ public class Trajectory {
 		for(int i=0; i<Points.Length; i+=step) {
 			//UltiDraw.DrawLine(Points[i].GetPosition(), Points[i].GetPosition() + Points[i].Phase*Vector3.up, UltiDraw.IndianRed);
 			UltiDraw.DrawArrow(Points[i].GetPosition(), Points[i].GetPosition() + Points[i].Phase*Vector3.up, 0.8f, 0.025f, 0.05f, UltiDraw.IndianRed.Transparent(0.5f));
-			UltiDraw.DrawSphere(Points[i].GetPosition(), Quaternion.identity, Points[i].PhaseUpdate / 10f, UltiDraw.Purple.Transparent(0.25f));
+			//UltiDraw.DrawSphere(Points[i].GetPosition(), Quaternion.identity, Points[i].PhaseUpdate / 10f, UltiDraw.Purple.Transparent(0.25f));
 		}
+
+		/*
+		List<float[]> signal = new List<float[]>();
+		for(int i=0; i<Styles.Length; i++) {
+			float[] s = new float[Points.Length];
+			for(int j=0; j<Points.Length; j++) {
+				s[j] = Points[j].Signals[i];
+			}
+			signal.Add(s);
+		}
+		List<float[]> signalInput = new List<float[]>();
+		for(int i=0; i<Styles.Length; i++) {
+			float[] s = new float[Points.Length];
+			for(int j=0; j<Points.Length; j++) {
+				s[j] = Points[j].Signals[i] - Points[j].Styles[i];
+			}
+			signalInput.Add(s);
+		}
+		List<float[]> stateInput = new List<float[]>();
+		for(int i=0; i<Styles.Length; i++) {
+			float[] s = new float[Points.Length];
+			for(int j=0; j<Points.Length; j++) {
+				s[j] = Points[j].Styles[i];
+			}
+			stateInput.Add(s);
+		}
+		UltiDraw.DrawGUIFunctions(new Vector2(0.5f, 0.4f), new Vector2(0.75f, 0.1f), signal, 0f, 1f, UltiDraw.DarkGrey, colors);
+		UltiDraw.DrawGUIFunctions(new Vector2(0.5f, 0.25f), new Vector2(0.75f, 0.1f), stateInput, 0f, 1f, UltiDraw.DarkGrey, colors);
+		UltiDraw.DrawGUIFunctions(new Vector2(0.5f, 0.1f), new Vector2(0.75f, 0.1f), signalInput, -1f, 1f, UltiDraw.DarkGrey, colors);
+		*/
 
 		UltiDraw.End();
 	}
